@@ -1,0 +1,27 @@
+include(vcpkg_common_functions)
+
+vcpkg_from_github(
+    OUT_SOURCE_PATH SOURCE_PATH
+    REPO NordicSemiconductor/pc-ble-driver
+    REF 3151167dae5f2f3a057f2724cda2f8cfcc34b1a1
+    SHA512 e21377a483d6c29c60f2b0f67f96d83a0f2a300edc22b78f2492719e01bd360f3f024ab37243c6e5491dc8a5ae86a02de02f582bf251d1cba19a4aa24e4c839d
+)
+
+set(VCPKG_OSX_DEPLOYMENT_TARGET "10.9")
+
+vcpkg_configure_cmake(
+    SOURCE_PATH ${SOURCE_PATH}
+    PREFER_NINJA
+    OPTIONS -DDISABLE_EXAMPLES= -DDISABLE_TESTS= -DNRF_BLE_DRIVER_VERSION=4.0.0 -DCONNECTIVITY_VERSION=4.0.0
+)
+
+vcpkg_install_cmake()
+vcpkg_copy_pdbs()
+vcpkg_fixup_cmake_targets()
+
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
+file(REMOVE ${CURRENT_PACKAGES_DIR}/debug/LICENSE)
+file(REMOVE ${CURRENT_PACKAGES_DIR}/LICENSE)
+
+file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)

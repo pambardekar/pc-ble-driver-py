@@ -191,7 +191,7 @@ class BLEAdapter(BLEDriverObserver):
             self.driver.ble_gap_connect(
                 address=address, scan_params=scan_params, conn_params=conn_params
             )
-        elif nrf_sd_ble_api_ver == 5:
+        elif nrf_sd_ble_api_ver == 6:
             self.driver.ble_gap_connect(
                 address=address,
                 scan_params=scan_params,

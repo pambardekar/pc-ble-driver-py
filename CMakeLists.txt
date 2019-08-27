@@ -19,14 +19,14 @@ set(PC_BLE_DRIVER_PY_OUTDIR ${CMAKE_BINARY_DIR}/outdir)
 # There is no reason to compile more than two SoftDevice API versions
 # The Python module only supports one SoftDevice API
 # version for NRF51 and one for NRF52
-set(SD_API_VERS "2;5")
+set(SD_API_VERS "2;6")
 
 # SWIG
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
 # nrf-ble-driver
-find_package(nrf-ble-driver 4.1.1 CONFIG REQUIRED)
+find_package(nrf-ble-driver 4.0.0 CONFIG REQUIRED)
 
 # PYTHON_INCLUDE_DIR provided by scikit-build
 include_directories(${PYTHON_INCLUDE_DIR})
@@ -117,8 +117,8 @@ foreach(SD_API_VER ${SD_API_VERS})
     endif()
 endforeach()
 
-set(BUILD_OUTPUT_LIB_DIR "pc_ble_driver_py/lib")
-set(BUILD_OUTPUT_HEX_DIR "pc_ble_driver_py/hex")
+set(BUILD_OUTPUT_LIB_DIR "plezmo_ble_driver_py/lib")
+set(BUILD_OUTPUT_HEX_DIR "plezmo_ble_driver_py/hex")
 
 foreach(SD_API_VER ${SD_API_VERS})
     install(

@@ -73,8 +73,8 @@ if nrf_sd_ble_api_ver == 2:
     import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v2 as driver
 
     ATT_MTU_DEFAULT = driver.GATT_MTU_SIZE_DEFAULT
-elif nrf_sd_ble_api_ver == 5:
-    import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v5 as driver
+elif nrf_sd_ble_api_ver == 6:
+    import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v6 as driver
 
     ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 else:
@@ -85,6 +85,11 @@ else:
 import pc_ble_driver_py.ble_driver_types as util
 from pc_ble_driver_py.exceptions import NordicSemiException
 
+if nrf_sd_ble_api_ver == 6:
+    mp_data = driver.uint8_array(driver.BLE_GAP_ADV_SET_DATA_SIZE_EXTENDED_MAX_SUPPORTED)
+    m_adv_report_buffer = driver.ble_data_t()
+    m_adv_report_buffer.p_data = mp_data.cast()
+    m_adv_report_buffer.len = driver.BLE_GAP_ADV_SET_DATA_SIZE_EXTENDED_MAX_SUPPORTED
 
 def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
     if wrapped is None:
@@ -133,7 +138,7 @@ class BLEEvtID(Enum):
         evt_tx_complete = driver.BLE_EVT_TX_COMPLETE
         evt_data_length_changed = driver.BLE_EVT_DATA_LENGTH_CHANGED
 
-    if nrf_sd_ble_api_ver == 5:
+    if nrf_sd_ble_api_ver == 6:
         gatts_evt_exchange_mtu_request = driver.BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
         gattc_evt_exchange_mtu_rsp = driver.BLE_GATTC_EVT_EXCHANGE_MTU_RSP
         gap_evt_data_length_update = driver.BLE_GAP_EVT_DATA_LENGTH_UPDATE
@@ -237,10 +242,11 @@ class BLEVersion(object):
 
 
 class BLEGapAdvType(Enum):
-    connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_IND
-    connectable_directed = driver.BLE_GAP_ADV_TYPE_ADV_DIRECT_IND
-    scanable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_SCAN_IND
-    non_connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_NONCONN_IND
+    if nrf_sd_ble_api_ver == 2:
+        connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_IND
+        connectable_directed = driver.BLE_GAP_ADV_TYPE_ADV_DIRECT_IND
+        scanable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_SCAN_IND
+        non_connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_NONCONN_IND
 
 
 class BLEGapRoles(Enum):
@@ -250,8 +256,8 @@ class BLEGapRoles(Enum):
 
 
 class BLEGapTimeoutSrc(Enum):
-    advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
     if nrf_sd_ble_api_ver == 2:
+        advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
         security_req = driver.BLE_GAP_TIMEOUT_SRC_SECURITY_REQUEST
     if nrf_sd_ble_api_ver == 5:
         auth_payload = driver.BLE_GAP_TIMEOUT_SRC_AUTH_PAYLOAD
@@ -292,7 +298,7 @@ class BLEGapSecStatus(Enum):
 
 
 class BLEConfig(Enum):
-    if nrf_sd_ble_api_ver == 5:
+    if nrf_sd_ble_api_ver == 6:
         conn_gap = driver.BLE_CONN_CFG_GAP
         conn_gattc = driver.BLE_CONN_CFG_GATTC
         conn_gatts = driver.BLE_CONN_CFG_GATTS
@@ -312,13 +318,16 @@ class BLEGapAdvParams(object):
 
     def to_c(self):
         adv_params = driver.ble_gap_adv_params_t()
-        adv_params.type = BLEGapAdvType.connectable_undirected.value
         adv_params.p_peer_addr = None  # Undirected advertisement.
-        adv_params.fp = driver.BLE_GAP_ADV_FP_ANY
-        adv_params.p_whitelist = None
         adv_params.interval = util.msec_to_units(self.interval_ms, util.UNIT_0_625_MS)
-        adv_params.timeout = self.timeout_s
-
+        if nrf_sd_ble_api_ver == 2:
+            adv_params.type = BLEGapAdvType.connectable_undirected.value
+            adv_params.fp = driver.BLE_GAP_ADV_FP_ANY
+            adv_params.timeout = self.timeout_s
+            adv_params.p_whitelist = None
+        if nrf_sd_ble_api_ver == 6:
+            adv_params.filter_policy = driver.BLE_GAP_ADV_FP_ANY
+            adv_params.duration = self.timeout_s
         return adv_params
 
 
@@ -330,9 +339,12 @@ class BLEGapScanParams(object):
 
     def to_c(self):
         scan_params = driver.ble_gap_scan_params_t()
-        scan_params.active = True
-        scan_params.selective = False
-        scan_params.p_whitelist = None
+        if nrf_sd_ble_api_ver == 2:
+            scan_params.selective = False
+            scan_params.p_whitelist = None
+        if nrf_sd_ble_api_ver == 6:
+            scan_params.filter_policy = driver.BLE_GAP_SCAN_FP_ACCEPT_ALL
+            scan_params.scan_phys = driver.BLE_GAP_PHY_1MBPS
         scan_params.interval = util.msec_to_units(self.interval_ms, util.UNIT_0_625_MS)
         scan_params.window = util.msec_to_units(self.window_ms, util.UNIT_0_625_MS)
         scan_params.timeout = self.timeout_s
@@ -790,7 +802,7 @@ class BLEAdvData(object):
 
     @classmethod
     def from_c(cls, adv_report_evt):
-        ad_list = util.uint8_array_to_list(adv_report_evt.data, adv_report_evt.dlen)
+        ad_list = util.uint8_array_to_list(adv_report_evt.data.p_data, adv_report_evt.data.len)
         ble_adv_data = cls()
         index = 0
 
@@ -1453,8 +1465,7 @@ class BLEDriver(object):
                 raise
 
             if not flasher.fw_check():
-                logger.info("Flashing '{}' board with '{}' firmware"
-                            .format(serial_port, config.conn_ic_hex_get()))
+                logger.info("Flashing board with firmware")
                 flasher.fw_flash()
 
             flasher.reset()
@@ -1611,7 +1622,7 @@ class BLEDriver(object):
 
     @staticmethod
     def scan_params_setup():
-        return BLEGapScanParams(interval_ms=200, window_ms=150, timeout_s=10)
+        return BLEGapScanParams(interval_ms=200, window_ms=150, timeout_s=300)
 
     @staticmethod
     def conn_params_setup():
@@ -1631,7 +1642,7 @@ class BLEDriver(object):
             err_code = driver.sd_ble_enable(
                 self.rpc_adapter, ble_enable_params.to_c(), app_ram_base
             )
-        elif nrf_sd_ble_api_ver == 5:
+        elif nrf_sd_ble_api_ver == 6:
             assert (
                 ble_enable_params is None
             ), "ble_enable_params not used in s132 v5 API"
@@ -1659,7 +1670,7 @@ class BLEDriver(object):
             gap_addr = gap_addr.to_c()
         if nrf_sd_ble_api_ver == 2:
             return driver.sd_ble_gap_address_set(self.rpc_adapter, 0, gap_addr)
-        elif nrf_sd_ble_api_ver == 5:
+        elif nrf_sd_ble_api_ver == 6:
             return driver.sd_ble_gap_addr_set(self.rpc_adapter, gap_addr)
 
     @wrapt.synchronized(api_lock)
@@ -1689,7 +1700,7 @@ class BLEDriver(object):
         if not adv_params:
             adv_params = self.adv_params_setup()
         assert isinstance(adv_params, BLEGapAdvParams), "Invalid argument type"
-        if nrf_sd_ble_api_ver == 5:
+        if nrf_sd_ble_api_ver == 6:
             return driver.sd_ble_gap_adv_start(self.rpc_adapter, adv_params.to_c(), tag)
         else:
             return driver.sd_ble_gap_adv_start(self.rpc_adapter, adv_params.to_c())
@@ -1717,7 +1728,12 @@ class BLEDriver(object):
         if not scan_params:
             scan_params = self.scan_params_setup()
         assert isinstance(scan_params, BLEGapScanParams), "Invalid argument type"
-        return driver.sd_ble_gap_scan_start(self.rpc_adapter, scan_params.to_c())
+        return driver.sd_ble_gap_scan_start(self.rpc_adapter, scan_params.to_c(), m_adv_report_buffer)
+        
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_scan_continue(self):
+        return driver.sd_ble_gap_scan_start(self.rpc_adapter, None, m_adv_report_buffer)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -1741,7 +1757,7 @@ class BLEDriver(object):
             return driver.sd_ble_gap_connect(
                 self.rpc_adapter, address.to_c(), scan_params.to_c(), conn_params.to_c()
             )
-        elif nrf_sd_ble_api_ver == 5:
+        elif nrf_sd_ble_api_ver == 6:
             return driver.sd_ble_gap_connect(
                 self.rpc_adapter,
                 address.to_c(),
@@ -1941,7 +1957,7 @@ class BLEDriver(object):
     def ble_gattc_exchange_mtu_req(self, conn_handle, mtu):
         logger.debug(
             "Sending GATTC MTU exchange request: {}".format(
-                self.ble_enable_params.att_mtu
+                mtu
             )
         )
         return driver.sd_ble_gattc_exchange_mtu_request(
@@ -2168,8 +2184,6 @@ class BLEDriver(object):
             elif evt_id == BLEEvtID.gap_evt_adv_report:
                 adv_report_evt = ble_event.evt.gap_evt.params.adv_report
                 adv_type = None
-                if not adv_report_evt.scan_rsp:
-                    adv_type = BLEGapAdvType(adv_report_evt.type)
 
                 for obs in self.observers:
                     obs.on_gap_evt_adv_report(
@@ -2379,7 +2393,7 @@ class BLEDriver(object):
                             count=ble_event.evt.common_evt.params.tx_complete.count,
                         )
 
-            elif nrf_sd_ble_api_ver == 5:
+            elif nrf_sd_ble_api_ver == 6:
                 if evt_id == BLEEvtID.gattc_evt_write_cmd_tx_complete:
                     tx_complete_evt = (
                         ble_event.evt.gattc_evt.params.write_cmd_tx_complete
@@ -2419,7 +2433,7 @@ class BLEDriver(object):
                     else:
                         _server_rx_mtu = ATT_MTU_DEFAULT
 
-                    _att_mtu = min(_server_rx_mtu, self.ble_enable_params.att_mtu)
+                    _att_mtu = min(_server_rx_mtu, 50)
                     logger.debug("GATTC: ATT MTU: {}".format(_att_mtu))
 
                     for obs in self.observers:
@@ -2493,7 +2507,7 @@ class Flasher(object):
         # flash location for info struct
         if nrf_sd_ble_api_ver == 2:
             return 0x39000
-        elif nrf_sd_ble_api_ver == 5:
+        elif nrf_sd_ble_api_ver == 6:
             return 0x50000
         else:
             raise NordicSemiException(

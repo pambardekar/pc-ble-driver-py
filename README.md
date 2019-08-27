@@ -31,6 +31,10 @@ please install the redistributable installer for [Visual Studio 2013](https://ww
 
 Before building pc-ble-driver-py you will need to install nrf-ble-driver as a CMake module. The easiest way to do this is to install it with [vcpkg](https://github.com/NordicPlayground/vcpkg).
 
+We have modified some vcpkg files to build 4.0.0 version of nrf-ble-driver (vcpkg master branch build 4.1.1 version which is incompatible with Plezmo dongle firmware).
+
+Before building nrf-ble-driver, replace files from vcpkg-files to vcpkg/ports/nrf-ble-driver.
+
     vcpkg install nrf-ble-driver
 
 To use a different triplet than the default one, see documentation in vcpkg:
@@ -49,8 +53,6 @@ Before compiling the binding do the following:
 
 
         pip install -r requirements-dev.txt
-
-
 
 Building a release of the binding and automatically running tests afterwards can be initiated with [tox](https://tox.readthedocs.io/en/latest/). tox is a generic virtualenv management and test command line tool.
 
@@ -77,9 +79,6 @@ To build a debug build of the binding:
 
 
 The wheel packages are found in the `dist` directory
-
-
-
 
 ### Dependencies
 

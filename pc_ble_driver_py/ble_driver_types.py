@@ -42,8 +42,8 @@ nrf_sd_ble_api_ver = config.sd_api_ver_get()
 
 if nrf_sd_ble_api_ver == 2:
     import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v2 as ble_driver
-elif nrf_sd_ble_api_ver == 5:
-    import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v5 as ble_driver
+elif nrf_sd_ble_api_ver == 6:
+    import pc_ble_driver_py.lib.nrf_ble_driver_sd_api_v6 as ble_driver
 else:
     raise NordicSemiException(
         "SoftDevice API {} not supported".format(nrf_sd_ble_api_ver)
