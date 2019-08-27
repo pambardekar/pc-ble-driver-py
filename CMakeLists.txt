@@ -117,8 +117,8 @@ foreach(SD_API_VER ${SD_API_VERS})
     endif()
 endforeach()
 
-set(BUILD_OUTPUT_LIB_DIR "plezmo_ble_driver_py/lib")
-set(BUILD_OUTPUT_HEX_DIR "plezmo_ble_driver_py/hex")
+set(BUILD_OUTPUT_LIB_DIR "pc_ble_driver_py/lib")
+set(BUILD_OUTPUT_HEX_DIR "pc_ble_driver_py/hex")
 
 foreach(SD_API_VER ${SD_API_VERS})
     install(
